@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการรหัส P Theater</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-shadow { box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .loading { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl card-shadow p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m0 0a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9a2 2 0 012-2m0 0V7a2 2 0 012-2h2a2 2 0 012 2v1"></path>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">P Theater System</h1>
+                <p class="text-gray-600">ระบบจัดการรหัสผู้ใช้งาน</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อผู้ใช้</label>
+                    <input type="text" id="username" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+                    <input type="password" id="password" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
+                </div>
+                
+                <button type="submit" id="loginBtn" 
+                        class="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-3 rounded-lg font-medium hover:from-purple-600 hover:to-blue-600 transition-all transform hover:scale-105">
+                    <span id="loginBtnText">เข้าสู่ระบบ</span>
+                    <div id="loginSpinner" class="loading w-5 h-5 border-2 border-white border-t-transparent rounded-full mx-auto hidden"></div>
+                </button>
+            </form>
+            
+            <div id="loginError" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
+        </div>
+    </div>
+
+    <div id="mainScreen" class="min-h-screen p-4 hidden">
+        <div class="bg-white rounded-2xl card-shadow p-6 mb-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">ระบบจัดการรหัส P Theater</h1>
+                    <p class="text-gray-600">ยินดีต้อนรับ <span id="welcomeUser" class="font-medium text-purple-600"></span></p>
+                </div>
+                <button onclick="logout()" 
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-all">
+                    ออกจากระบบ
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl card-shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">ค้นหาข้อมูล</h2>
+            
+            <div class="flex gap-4 mb-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">เลขบ้าน</label>
+                    <input type="text" id="searchHouseNumber" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                           placeholder="กรุณาใส่เลขบ้าน">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="searchData()" id="searchBtn"
+                             class="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white px-6 py-3 rounded-lg font-medium transition-all transform hover:scale-105">
+                        <span id="searchBtnText">ค้นหา</span>
+                        <div id="searchSpinner" class="loading w-5 h-5 border-2 border-white border-t-transparent rounded-full mx-auto hidden"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultsSection" class="hidden">
+            <div class="bg-white rounded-2xl card-shadow p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">ผลการค้นหา</h2>
+                <div id="searchResults"></div>
+            </div>
+        </div>
+
+        <div id="deleteSection" class="bg-white rounded-2xl card-shadow p-6 hidden">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">ลบรหัสที่ใช้แล้ว</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">เลขบ้าน</label>
+                    <input type="text" id="deleteHouseNumber" readonly
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">รหัสที่ต้องการลบ</label>
+                    <input type="text" id="codeToDelete" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                           placeholder="กรุณาใส่รหัส 8 หลักที่ต้องการลบ">
+                </div>
+            </div>
+            
+            <button onclick="deleteCode()" id="deleteBtn"
+                    class="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white py-3 rounded-lg font-medium transition-all transform hover:scale-105">
+                <span id="deleteBtnText">ลบรหัส</span>
+                <div id="deleteSpinner" class="loading w-5 h-5 border-2 border-white border-t-transparent rounded-full mx-auto hidden"></div>
+            </button>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed top-4 right-4 z-50 hidden">
+        <div class="bg-white border-l-4 border-green-500 rounded-lg shadow-lg p-4 max-w-sm">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg id="toastIcon" class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p id="toastMessage" class="text-sm font-medium text-gray-900"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxu2_pyLOIJ7fo_Ta1KLRu95otGllV0MdwgXuIjUbECAs3lYa8GVCzCqe6lo4SXBOmf/exec';
+        let currentUser = '';
+        let currentHouseData = null;
+
+        // Login functionality
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await login();
+        });
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            setLoading('loginBtn', 'loginBtnText', 'loginSpinner', true);
+            
+            try {
+                const params = new URLSearchParams();
+                params.append('action', 'login');
+                params.append('username', username);
+                params.append('password', password);
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: params.toString()
+                });
+                
+                const responseText = await response.text();
+                console.log('Login response:', responseText); // Debug log
+                
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (e) {
+                    console.error('JSON parse error:', e);
+                    showError('loginError', 'เกิดข้อผิดพลาดในการประมวลผลข้อมูล');
+                    return;
+                }
+                
+                if (result.success) {
+                    currentUser = username;
+                    document.getElementById('welcomeUser').textContent = username;
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('mainScreen').classList.remove('hidden');
+                    document.getElementById('mainScreen').classList.add('fade-in');
+                    
+                    // Log login activity
+                    logActivity('เข้าสู่ระบบ', `ผู้ใช้ ${username} เข้าสู่ระบบ`);
+                } else {
+                    showError('loginError', result.message || 'เข้าสู่ระบบไม่สำเร็จ');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('loginError', 'เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message);
+            }
+            
+            setLoading('loginBtn', 'loginBtnText', 'loginSpinner', false);
+        }
+
+        async function searchData() {
+            const houseNumber = document.getElementById('searchHouseNumber').value.trim();
+            
+            if (!houseNumber) {
+                showToast('กรุณาใส่เลขบ้าน', 'error');
+                return;
+            }
+            
+            setLoading('searchBtn', 'searchBtnText', 'searchSpinner', true);
+            
+            try {
+                const params = new URLSearchParams();
+                params.append('action', 'search');
+                params.append('houseNumber', houseNumber);
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: params.toString()
+                });
+                
+                const responseText = await response.text();
+                console.log('Search response:', responseText); // Debug log
+                
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (e) {
+                    console.error('JSON parse error:', e);
+                    showToast('เกิดข้อผิดพลาดในการประมวลผลข้อมูล', 'error');
+                    return;
+                }
+                
+                console.log('Search result:', result); // Debug log
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    currentHouseData = result.data[0];
+                    console.log('Current house data:', currentHouseData); // Debug log
+                    displaySearchResults(result.data);
+                    document.getElementById('resultsSection').classList.remove('hidden');
+                    document.getElementById('deleteSection').classList.remove('hidden');
+                    document.getElementById('deleteHouseNumber').value = houseNumber;
+                    
+                    // Log search activity
+                    logActivity('ค้นหาข้อมูล', `ค้นหาเลขบ้าน ${houseNumber}`);
+                } else {
+                    showToast('ไม่พบข้อมูลเลขบ้านที่ระบุ', 'error');
+                    document.getElementById('resultsSection').classList.add('hidden');
+                    document.getElementById('deleteSection').classList.add('hidden');
+                    currentHouseData = null;
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                showToast('เกิดข้อผิดพลาดในการค้นหา: ' + error.message, 'error');
+            }
+            
+            setLoading('searchBtn', 'searchBtnText', 'searchSpinner', false);
+        }
+
+        function displaySearchResults(data) {
+            const resultsContainer = document.getElementById('searchResults');
+            
+            let html = '';
+            data.forEach((item, index) => {
+                html += `
+                    <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">เลขบ้าน</label>
+                                <div class="text-lg font-semibold text-purple-600">${item.houseNumber}</div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+                                <div class="text-gray-800">${item.email || 'ไม่ระบุ'}</div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">พาสเวิร์ด</label>
+                                <div class="text-gray-800">${item.password || 'ไม่ระบุ'}</div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">รหัส 8 หลัก (${item.codes.length} รหัส)</label>
+                            <div class="bg-gray-50 rounded-lg p-3 max-h-40 overflow-y-auto">
+                                ${item.codes.length > 0 ? 
+                                    item.codes.map((code, i) => 
+                                        `<div class="flex justify-between items-center py-1 px-2 hover:bg-gray-100 rounded">
+                                            <span class="font-mono text-sm">${code}</span>
+                                            <button onclick="fillDeleteCode('${code}')" 
+                                                    class="text-red-500 hover:text-red-700 text-xs px-2 py-1 rounded hover:bg-red-50">
+                                                เลือกลบ
+                                            </button>
+                                        </div>`
+                                    ).join('')
+                                    : '<div class="text-gray-500 text-center py-2">ไม่มีรหัส</div>'
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            resultsContainer.innerHTML = html;
+        }
+
+        function fillDeleteCode(code) {
+            document.getElementById('codeToDelete').value = code;
+            showToast('เลือกรหัส ' + code + ' เพื่อลบ', 'info');
+        }
+
+        async function deleteCode() {
+            const houseNumber = document.getElementById('deleteHouseNumber').value.trim();
+            const codeToDelete = document.getElementById('codeToDelete').value.trim();
+            
+            console.log('Delete attempt:', { houseNumber, codeToDelete, currentUser }); // Debug log
+            
+            if (!codeToDelete) {
+                showToast('กรุณาใส่รหัสที่ต้องการลบ', 'error');
+                return;
+            }
+            
+            if (!houseNumber) {
+                showToast('กรุณาค้นหาเลขบ้านก่อน', 'error');
+                return;
+            }
+            
+            // ตรวจสอบว่ารหัสที่จะลบมีอยู่ในรายการหรือไม่
+            const foundCodeInList = currentHouseData && currentHouseData.codes && currentHouseData.codes.includes(codeToDelete);
+            
+            if (!foundCodeInList) {
+                showToast('ไม่พบรหัสที่ระบุในรายการ กรุณาตรวจสอบรหัสอีกครั้ง', 'error');
+                console.log('Available codes:', currentHouseData ? currentHouseData.codes : 'No data');
+                return;
+            }
+            
+            if (!confirm(`คุณต้องการลบรหัส "${codeToDelete}" จากเลขบ้าน "${houseNumber}" ใช่หรือไม่?\n\nการลบนี้จะไม่สามารถยกเลิกได้`)) {
+                return;
+            }
+            
+            setLoading('deleteBtn', 'deleteBtnText', 'deleteSpinner', true);
+            
+            try {
+                const params = new URLSearchParams();
+                params.append('action', 'deleteCode');
+                params.append('houseNumber', houseNumber);
+                params.append('codeToDelete', codeToDelete);
+                params.append('username', currentUser);
+                
+                console.log('Sending delete request with params:', {
+                    action: 'deleteCode',
+                    houseNumber: houseNumber,
+                    codeToDelete: codeToDelete,
+                    username: currentUser
+                });
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: params.toString()
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const responseText = await response.text();
+                console.log('Delete response text:', responseText); // Debug log
+                
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                    console.log('Delete result parsed:', result); // Debug log
+                } catch (e) {
+                    console.error('JSON parse error:', e);
+                    console.error('Response text was:', responseText);
+                    showToast('เกิดข้อผิดพลาดในการประมวลผลข้อมูล', 'error');
+                    return;
+                }
+                
+                if (result && result.success) {
+                    showToast('ลบรหัสเรียบร้อยแล้ว! ระบบจะอัปเดตข้อมูลใหม่', 'success');
+                    document.getElementById('codeToDelete').value = '';
+                    
+                    // Refresh search results
+                    setTimeout(() => {
+                        console.log('Refreshing search results...');
+                        searchData();
+                    }, 1000);
+                } else {
+                    const errorMessage = result ? result.message : 'ไม่ทราบสาเหตุ';
+                    showToast('ไม่สามารถลบรหัสได้: ' + errorMessage, 'error');
+                    console.error('Delete failed:', result);
+                    
+                    // แสดงข้อมูล debug เพิ่มเติม
+                    console.log('Debug info:', {
+                        sentHouseNumber: houseNumber,
+                        sentCode: codeToDelete,
+                        availableCodes: currentHouseData ? currentHouseData.codes : 'No data'
+                    });
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message, 'error');
+            }
+            
+            setLoading('deleteBtn', 'deleteBtnText', 'deleteSpinner', false);
+        }
+
+        async function logActivity(action, details) {
+            try {
+                const formData = new FormData();
+                formData.append('action', 'log');
+                formData.append('logAction', action);
+                formData.append('username', currentUser);
+                formData.append('timestamp', new Date().toLocaleString('th-TH'));
+                formData.append('details', details);
+                
+                await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+            } catch (error) {
+                console.error('Log error:', error);
+            }
+        }
+
+        function logout() {
+            if (confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+                logActivity('ออกจากระบบ', `ผู้ใช้ ${currentUser} ออกจากระบบ`);
+                
+                currentUser = '';
+                currentHouseData = null;
+                
+                document.getElementById('mainScreen').classList.add('hidden');
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('resultsSection').classList.add('hidden');
+                document.getElementById('deleteSection').classList.add('hidden');
+                
+                // Clear forms
+                document.getElementById('loginForm').reset();
+                document.getElementById('searchHouseNumber').value = '';
+                document.getElementById('codeToDelete').value = '';
+                document.getElementById('loginError').classList.add('hidden');
+            }
+        }
+
+        function setLoading(btnId, textId, spinnerId, isLoading) {
+            const btn = document.getElementById(btnId);
+            const text = document.getElementById(textId);
+            const spinner = document.getElementById(spinnerId);
+            
+            if (isLoading) {
+                btn.disabled = true;
+                text.classList.add('hidden');
+                spinner.classList.remove('hidden');
+            } else {
+                btn.disabled = false;
+                text.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            }
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.remove('hidden');
+            
+            setTimeout(() => {
+                errorElement.classList.add('hidden');
+            }, 5000);
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+            
+            toastMessage.textContent = message;
+            
+            // Change colors based on type
+            const toastContainer = toast.querySelector('div');
+            if (type === 'error') {
+                toastContainer.className = 'bg-white border-l-4 border-red-500 rounded-lg shadow-lg p-4 max-w-sm';
+                toastIcon.className = 'w-5 h-5 text-red-500';
+            } else if (type === 'info') {
+                toastContainer.className = 'bg-white border-l-4 border-blue-500 rounded-lg shadow-lg p-4 max-w-sm';
+                toastIcon.className = 'w-5 h-5 text-blue-500';
+            } else {
+                toastContainer.className = 'bg-white border-l-4 border-green-500 rounded-lg shadow-lg p-4 max-w-sm';
+                toastIcon.className = 'w-5 h-5 text-green-500';
+            }
+            
+            toast.classList.remove('hidden');
+            toast.classList.add('fade-in');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+                toast.classList.remove('fade-in');
+            }, 3000);
+        }
+
+        // Enter key support
+        document.getElementById('searchHouseNumber').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchData();
+            }
+        });
+
+        document.getElementById('codeToDelete').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                deleteCode();
+            }
+        });
+    </script>
+</body>
+</html>
